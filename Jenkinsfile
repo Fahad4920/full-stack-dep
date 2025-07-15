@@ -2,68 +2,65 @@ pipeline {
     agent any
 
     environment {
-        COMPOSE_FILE = 'docker-compose.yml'  // Define the Docker Compose file name
-        PROJECT_NAME = 'simple-html-web'  // The name of the project/container
+        COMPOSE_FILE = 'docker-compose.yml'   // Docker Compose file in the repo
+        PROJECT_NAME = 'simple-html-web'      // Docker Compose project/container name
     }
 
     triggers {
-        pollSCM('H/1 * * * *')  // Poll GitHub every 5 minutes for changes
+        pollSCM('H/2 * * * *') // Check for changes every 2 minutes
     }
 
     stages {
-        stage('Check for Changes') {
+
+        stage('Checkout Repository') {
             steps {
-                script {
-                    echo 'Checking for changes in the repository...'
-                    checkout scm  // Pull the latest code from the repository
-                }
+                echo 'Cloning latest code from GitHub...'
+                checkout scm
             }
         }
 
-        stage('Stop and Remove Existing Containers') {
+        stage('Stop and Clean Existing Containers') {
             steps {
                 script {
-                    echo 'Checking for existing containers...'
-                    // Check if the container related to this project exists
+                    echo 'Checking for running containers...'
                     def containers = sh(script: "docker ps -q --filter name=${PROJECT_NAME}", returnStdout: true).trim()
+                    
                     if (containers) {
-                        echo 'Stopping and removing existing containers...'
-                        sh 'docker compose down --remove-orphans'  // Use docker-compose
+                        echo 'Stopping and removing old containers...'
+                        sh 'docker compose down --remove-orphans'
                     } else {
-                        echo 'No existing containers found. Proceeding with the build.'
+                        echo 'No existing containers to stop.'
                     }
                 }
             }
         }
 
-        stage('Build and Start Containers') {
+        stage('Build and Start with Docker Compose') {
             steps {
-                script {
-                    echo 'Building and starting the application using Docker Compose...'
-                    sh 'docker compose up --build -d'  // Use docker-compose
-                }
+                echo 'Building and launching containers...'
+                sh 'docker compose up --build -d'
             }
         }
 
-        stage('Remove Old <none> Images') {
+        stage('Clean Up Dangling Images') {
             steps {
-                script {
-                    echo 'Removing old Docker images with <none> tag...'
-                    sh 'docker images --filter "dangling=true" -q | xargs -r docker rmi -f'
-                }
+                echo 'Removing unused <none> Docker images...'
+                sh '''
+                    docker images -f "dangling=true" -q | xargs -r docker rmi -f || true
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'Deployment completed successfully. The application is running!'
+            echo '✅ Deployment completed successfully!'
         }
         failure {
-            echo 'Pipeline failed. Check logs for details.'
+            echo '❌ Deployment failed. Check console output for details.'
         }
         always {
-            echo 'Pipeline run completed.'
+            echo '📦 Jenkins pipeline execution complete.'
         }
     }
 }
