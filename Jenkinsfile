@@ -28,7 +28,7 @@ pipeline {
                     def containers = sh(script: "docker ps -q --filter name=${PROJECT_NAME}", returnStdout: true).trim()
                     if (containers) {
                         echo 'Stopping and removing existing containers...'
-                        sh 'docker-compose down --remove-orphans'  // Use docker-compose
+                        sh 'docker compose down --remove-orphans'  // Use docker-compose
                     } else {
                         echo 'No existing containers found. Proceeding with the build.'
                     }
@@ -40,7 +40,7 @@ pipeline {
             steps {
                 script {
                     echo 'Building and starting the application using Docker Compose...'
-                    sh 'docker-compose up --build -d'  // Use docker-compose
+                    sh 'docker compose up --build -d'  // Use docker-compose
                 }
             }
         }
