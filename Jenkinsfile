@@ -19,31 +19,24 @@ pipeline {
             }
         }
 
-        stage('Check Environment') {
+        stage('Verify Docker Environment') {
             steps {
-                script {
-                    echo '🔍 Checking Docker and Compose installation...'
-                    // Check Docker installation
-                    sh '''
-                        echo "Docker Version:"
-                        docker --version || { echo "❌ Docker is not installed or not in PATH."; exit 1; }
+                sh '''
+                    echo "Docker Version:"
+                    docker --version || { echo "❌ Docker not found."; exit 1; }
 
-                        echo "Docker Compose Plugin Version:"
-                        docker compose version || { echo "❌ Docker Compose plugin is not installed."; exit 1; }
+                    echo "Docker Compose Plugin Version:"
+                    docker compose version || { echo "❌ Docker Compose plugin not installed."; exit 1; }
 
-                        echo "User and Groups Info:"
-                        id
-
-                        echo "Jenkins user should be in 'docker' group to run Docker commands."
-                    '''
-                }
+                    echo "Running as user: $(whoami)"
+                    id
+                '''
             }
         }
 
         stage('Stop Existing Containers') {
             steps {
                 script {
-                    echo '🔎 Checking for running containers...'
                     def containers = sh(script: "docker ps -q --filter name=${PROJECT_NAME}", returnStdout: true).trim()
                     if (containers) {
                         echo "🛑 Stopping old containers..."
@@ -58,34 +51,27 @@ pipeline {
         stage('Build and Start Containers') {
             steps {
                 echo '🚀 Building and starting containers...'
-                script {
-                    sh '''
-                        set -x
-                        docker compose up --build -d
-                    '''
-                }
+                sh 'docker compose up --build -d'
             }
         }
 
-        stage('Cleanup Dangling Images') {
+        stage('Clean Up Dangling Images') {
             steps {
-                echo '🧹 Cleaning up dangling Docker images...'
-                sh '''
-                    docker images -f "dangling=true" -q | xargs -r docker rmi -f || true
-                '''
+                echo '🧹 Cleaning up unused Docker images...'
+                sh 'docker images -f "dangling=true" -q | xargs -r docker rmi -f || true'
             }
         }
     }
 
     post {
         success {
-            echo '✅ Deployment succeeded!'
+            echo '✅ Deployment completed successfully.'
         }
         failure {
-            echo '❌ Deployment failed. Check console output above for errors.'
+            echo '❌ Deployment failed. See error logs above.'
         }
         always {
-            echo '📦 Pipeline finished.'
+            echo '🧩 Pipeline run completed.'
         }
     }
 }
