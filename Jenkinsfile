@@ -10,6 +10,7 @@ pipeline {
         PROJECT_NAME = 'simple-html-web'
     }
 
+    
     triggers {
         pollSCM('H/2 * * * *') // Poll every 2 minutes
     }
