@@ -4,7 +4,6 @@ pipeline {
     options {
         timeout(time: 40, unit: 'MINUTES')
     }
-
     
     environment {
         COMPOSE_FILE = 'docker-compose.yml'
