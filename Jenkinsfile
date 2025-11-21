@@ -4,7 +4,8 @@ pipeline {
     options {
         timeout(time: 40, unit: 'MINUTES')
     }
-  
+
+    
     environment {
         COMPOSE_FILE = 'docker-compose.yml'
         PROJECT_NAME = 'simple-html-web'
